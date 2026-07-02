@@ -1,0 +1,203 @@
+-- ============================================================
+--  FORMULA APEX AUTO FARM v4.0
+--  HANYA UNTUK YANG MULIA KAREEMXD
+--  PLACE ID: 5976159288
+--  HOCKENHEIM | AUTO LAP | #1 DASHBOARD
+-- ============================================================
+
+local player = game:GetService("Players").LocalPlayer
+local virtualInput = game:GetService("VirtualInputManager")
+local runService = game:GetService("RunService")
+local httpService = game:GetService("HttpService")
+local placeId = game.PlaceId
+
+-- ===== CEK GAME =====
+local FORMULA_APEX_ID = 5976159288
+if placeId ~= FORMULA_APEX_ID then
+    print("❌ Game tidak dikenali. Hanya untuk Formula Apex Racing.")
+    return
+end
+print("✅ Formula Apex Racing v" .. game.PlaceVersion .. " detected!")
+
+-- ===== KONFIGURASI =====
+local CONFIG = {
+    speed = 1,
+    steerStrength = 0.35,
+    steerInterval = 0.12,
+    antiAFK = true,
+    autoReset = true,
+    perfectLine = true,
+    brakeBeforeTurn = true,
+    targetLapTime = 42,
+}
+
+-- ===== STATE =====
+local isFarming = false
+local isGasOn = false
+local currentSteer = 0
+local steerDirection = 1
+local afkTimer = 0
+local lapCount = 0
+local bestLap = 999
+
+-- ===== FUNGSI TOMBOL =====
+local function pressKey(key, isDown)
+    virtualInput:SendKeyEvent(isDown, key, false)
+end
+
+local function setGas(on)
+    isGasOn = on
+    pressKey(Enum.KeyCode.W, on)
+end
+
+local function setBrake(on)
+    pressKey(Enum.KeyCode.S, on)
+end
+
+local function setSteer(direction)
+    if direction < -0.2 then
+        pressKey(Enum.KeyCode.A, true)
+        pressKey(Enum.KeyCode.D, false)
+    elseif direction > 0.2 then
+        pressKey(Enum.KeyCode.D, true)
+        pressKey(Enum.KeyCode.A, false)
+    else
+        pressKey(Enum.KeyCode.A, false)
+        pressKey(Enum.KeyCode.D, false)
+    end
+end
+
+local function resetCar()
+    pressKey(Enum.KeyCode.R, true)
+    wait(0.1)
+    pressKey(Enum.KeyCode.R, false)
+end
+
+-- ===== ANTI AFK =====
+local function antiAFK()
+    if not CONFIG.antiAFK then return end
+    afkTimer = afkTimer + 1
+    if afkTimer >= 150 then
+        pressKey(Enum.KeyCode.A, true)
+        wait(0.05)
+        pressKey(Enum.KeyCode.A, false)
+        wait(0.05)
+        pressKey(Enum.KeyCode.D, true)
+        wait(0.05)
+        pressKey(Enum.KeyCode.D, false)
+        afkTimer = 0
+    end
+end
+
+-- ===== FARM LOOP =====
+local function startFarm()
+    if isFarming then return end
+    isFarming = true
+    setGas(true)
+    print("🔥 Auto Farm Started!")
+
+    while isFarming do
+        setGas(true)
+
+        currentSteer = currentSteer + (steerDirection * CONFIG.steerStrength * 0.02)
+        if math.abs(currentSteer) > 0.8 then
+            steerDirection = steerDirection * -1
+        end
+        setSteer(currentSteer)
+
+        antiAFK()
+
+        if CONFIG.autoReset then
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local vel = root.Velocity
+                if math.abs(vel.X) < 0.5 and math.abs(vel.Z) < 0.5 and isGasOn then
+                    resetCar()
+                    wait(1)
+                end
+                if math.abs(root.Rotation.X) > 80 then
+                    resetCar()
+                    wait(1)
+                end
+            end
+        end
+
+        wait(CONFIG.steerInterval)
+    end
+end
+
+local function stopFarm()
+    isFarming = false
+    setGas(false)
+    setSteer(0)
+    print("⏹️ Auto Farm Stopped!")
+end
+
+-- ===== CHAT COMMANDS =====
+print("🏁 Formula Apex Auto Farm Loaded!")
+print("📌 /farm start")
+print("📌 /farm stop")
+print("📌 /farm status")
+print("📌 /farm reset")
+
+player.Chatted:Connect(function(msg)
+    local cmd = msg:lower()
+    if cmd == "/farm start" then
+        startFarm()
+    elseif cmd == "/farm stop" then
+        stopFarm()
+    elseif cmd == "/farm status" then
+        print("🔹 Status: " .. (isFarming and "✅ Aktif" or "❌ Nonaktif"))
+    elseif cmd == "/farm reset" then
+        resetCar()
+        print("🔄 Reset mobil!")
+    end
+end)
+
+-- ============================================================
+--  DISCORD INTEGRATION
+-- ============================================================
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/your_webhook_url"
+
+local function sendToDiscord(message)
+    local data = { content = message }
+    pcall(function()
+        httpService:PostAsync(DISCORD_WEBHOOK, httpService:JSONEncode(data))
+    end)
+end
+
+sendToDiscord("🚀 **" .. player.Name .. "** memulai auto farm di Formula Apex!")
+
+-- ============================================================
+--  AUTO DETECT LAP (UNIVERSAL)
+-- ============================================================
+spawn(function()
+    local lastPos = nil
+    local lapStartTime = tick()
+
+    while wait(0.5) do
+        local root = player.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            local pos = root.Position
+            if lastPos then
+                local dist = (pos - lastPos).Magnitude
+                if dist < 5 and isFarming then
+                    -- Potensi finish line detected
+                    lapCount = lapCount + 1
+                    local lapTime = tick() - lapStartTime
+                    lapStartTime = tick()
+                    if lapTime < bestLap then
+                        bestLap = lapTime
+                        print("🏆 New Best Lap: " .. string.format("%.2f", lapTime) .. "s")
+                        sendToDiscord("🏆 **" .. player.Name .. "** best lap: " .. string.format("%.2f", lapTime) .. "s")
+                    else
+                        print("🏁 Lap #" .. lapCount .. ": " .. string.format("%.2f", lapTime) .. "s")
+                    end
+                end
+            end
+            lastPos = pos
+        end
+    end
+end)
+
+print("🗿 Hanya untuk Yang Mulia KAREEMXD")
