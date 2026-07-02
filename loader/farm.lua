@@ -1,5 +1,5 @@
 -- ============================================================
---  FORMULA APEX AUTO FARM v12.0 (FIXED + PORT 8080 + RAYFIELD)
+--  FORMULA APEX AUTO FARM v13.0 (WEBHOOK VERIFICATION)
 --  HANYA UNTUK YANG MULIA KAREEMXD
 -- ============================================================
 
@@ -10,7 +10,47 @@ local virtualInput = game:GetService("VirtualInputManager")
 local workspace = game:GetService("Workspace")
 
 -- ============================================================
---  LOAD RAYFIELD (LANGSUNG DARI SIRIUS)
+--  KONFIGURASI WEBHOOK DISCORD
+-- ============================================================
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/your_webhook_id/your_webhook_token"
+-- GANTI DENGAN WEBHOOK DARI SERVER DISCORD KAMU
+
+-- ============================================================
+--  FUNGSI CEK VERIFIKASI VIA WEBHOOK
+-- ============================================================
+local function checkVerification()
+    local data = { content = "!verify " .. playerName }
+    local success, response = pcall(function()
+        return httpService:PostAsync(DISCORD_WEBHOOK, httpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
+    end)
+    
+    if not success then
+        print("⚠️ Gagal konek ke Discord webhook.")
+        return false
+    end
+    
+    -- Cek apakah response mengandung "✅" (artinya terverifikasi)
+    return string.find(response, "✅") ~= nil
+end
+
+-- ============================================================
+--  VERIFIKASI WAJIB
+-- ============================================================
+print("🔍 Mengecek verifikasi untuk " .. playerName .. "...")
+
+local isVerified = checkVerification()
+
+if not isVerified then
+    print("🚫 Akses ditolak! Kamu tidak terverifikasi di Discord.")
+    print("📌 Gunakan /verify <username> di Discord.")
+    player:Kick("🚫 Tidak terverifikasi. Cek Discord!")
+    return
+else
+    print("✅ Verifikasi berhasil! Selamat datang, " .. playerName)
+end
+
+-- ============================================================
+--  LOAD RAYFIELD
 -- ============================================================
 local Rayfield
 local success, err = pcall(function()
@@ -24,42 +64,6 @@ if not success or not Rayfield then
 end
 
 Rayfield:LoadConfiguration()
-
--- ============================================================
---  KONFIGURASI API (PORT 8080)
--- ============================================================
-local API_URL = "https://inherited-citysearch-foundation-classroom.trycloudflare.com/verify" -- <-- PORT 8080 TERTULIS JELAS
-
--- ============================================================
---  VERIFIKASI KE API (PORT 8080)
--- ============================================================
-local function checkVerification()
-    local data = { username = playerName }
-    local success, response = pcall(function()
-        return httpService:PostAsync(API_URL, httpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
-    end)
-    
-    if not success then
-        print("⚠️ Gagal konek ke server verifikasi di " .. API_URL)
-        return false
-    end
-    
-    local result = httpService:JSONDecode(response)
-    return result.verified
-end
-
-print("🔍 Mengecek verifikasi untuk " .. playerName .. " di " .. API_URL)
-
-local isVerified = checkVerification()
-
-if not isVerified then
-    print("🚫 Akses ditolak! Kamu tidak terverifikasi di Discord.")
-    print("📌 Gunakan /verify <username> di Discord.")
-    player:Kick("🚫 Tidak terverifikasi. Cek Discord!")
-    return
-else
-    print("✅ Verifikasi berhasil! Selamat datang, " .. playerName)
-end
 
 -- ============================================================
 --  CEK GAME
@@ -94,7 +98,7 @@ local CONFIG = {
 }
 
 -- ============================================================
---  FUNGSI INPUT (FIXED)
+--  FUNGSI INPUT
 -- ============================================================
 local function pressKey(key, isDown)
     pcall(function()
@@ -106,7 +110,7 @@ local function setGas(on)
     isGasOn = on
     if on then
         pressKey(Enum.KeyCode.W, true)
-        pressKey(Enum.KeyCode.LeftShift, true)  -- akselerasi ekstra
+        pressKey(Enum.KeyCode.LeftShift, true)
     else
         pressKey(Enum.KeyCode.W, false)
         pressKey(Enum.KeyCode.LeftShift, false)
@@ -151,7 +155,7 @@ local function antiAFK()
 end
 
 -- ============================================================
---  DETEKSI LAP (FIXED - PAKAI CHECKPOINT TERAKHIR)
+--  DETEKSI LAP
 -- ============================================================
 local function getCheckpoints()
     local checkpoints = {}
@@ -164,9 +168,8 @@ local function getCheckpoints()
             table.insert(checkpoints, part)
         end
     end
-    -- Urutkan berdasarkan posisi (asumsi checkpoint berurutan)
     table.sort(checkpoints, function(a, b)
-        return a.Position.Z < b.Position.Z  -- sesuaikan sumbu jika perlu
+        return a.Position.Z < b.Position.Z
     end)
     return checkpoints
 end
@@ -179,16 +182,12 @@ local function detectLap()
     if not root then return end
 
     local pos = root.Position
-    local checkpointHit = false
-
     for _, cp in ipairs(checkpoints) do
         if cp and cp.Parent then
             local dist = (pos - cp.Position).Magnitude
             if dist < 15 then
                 if not checkpointPassed[cp] then
                     checkpointPassed[cp] = true
-                    checkpointHit = true
-                    -- Jika ini checkpoint terakhir, hitung lap
                     if cp == checkpoints[#checkpoints] then
                         local lapTime = tick() - lapStartTime
                         lapStartTime = tick()
@@ -199,7 +198,6 @@ local function detectLap()
                         else
                             print("🏁 Lap #" .. lapCount .. ": " .. string.format("%.2f", lapTime) .. "s")
                         end
-                        -- Reset checkpoint yang sudah dilewati
                         for c, _ in pairs(checkpointPassed) do
                             checkpointPassed[c] = nil
                         end
@@ -211,7 +209,7 @@ local function detectLap()
 end
 
 -- ============================================================
---  AUTO FARM LOOP (FIXED)
+--  AUTO FARM LOOP
 -- ============================================================
 local function startFarm()
     if isFarming then return end
@@ -280,12 +278,6 @@ local Window = Rayfield:CreateWindow({
         FolderName = "FormulaApexFarm",
         FileName = "Config"
     },
-    Discord = {
-        Enabled = false,
-        Invite = "noinvitelink",
-        RememberJoins = true
-    },
-    KeySystem = false,
 })
 
 local MainTab = Window:CreateTab("🏁 Main", "home")
@@ -369,10 +361,6 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
---  INISIALISASI
--- ============================================================
-print("🔥 Formula Apex Auto Farm v12.0 (Fixed + Port 8080) loaded!")
+print("🔥 Formula Apex Auto Farm v13.0 (Webhook Verif) loaded!")
 print("🗿 Hanya untuk Yang Mulia KAREEMXD")
 print("📌 Tekan K untuk toggle UI")
-print("✅ Verifikasi API di: " .. API_URL)
