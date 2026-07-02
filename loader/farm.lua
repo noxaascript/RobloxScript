@@ -12,7 +12,7 @@ local workspace = game:GetService("Workspace")
 -- ============================================================
 --  KONFIGURASI WEBHOOK DISCORD
 -- ============================================================
-local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/your_webhook_id/your_webhook_token"
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1522242154682908722/oFwWhKD_uqQEZfqhsJRYJtT9JjYQE6NOB6aYEls34_-GdhuXqGARNRW5s6Ntrlf5NQth"
 -- GANTI DENGAN WEBHOOK DARI SERVER DISCORD KAMU
 
 -- ============================================================
