@@ -28,7 +28,7 @@ Rayfield:LoadConfiguration()
 -- ============================================================
 --  KONFIGURASI API (PORT 8080)
 -- ============================================================
-local API_URL = "http://localhost:8080/verify"  -- <-- PORT 8080 TERTULIS JELAS
+local API_URL = "https://inherited-citysearch-foundation-classroom.trycloudflare.com/verify" -- <-- PORT 8080 TERTULIS JELAS
 
 -- ============================================================
 --  VERIFIKASI KE API (PORT 8080)
