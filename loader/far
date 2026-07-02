@@ -18,6 +18,8 @@ local virtualInput = game:GetService("VirtualInputManager")
 local httpService = game:GetService("HttpService")
 local placeId = game.PlaceId
 
+local API_URL = "http://localhost:8080/verify"
+
 local FORMULA_APEX_ID = 5976159288
 local isFarming = false
 local isGasOn = false
@@ -177,7 +179,7 @@ end)
 -- ============================================================
 --  DISCORD INTEGRATION
 -- ============================================================
-local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/your_webhook_url"
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1522192875750686830/zHc4hm6wD97WgOX3teGsfEn5jmAEnCz1yUO9w2mCQrJi8aNmp3tiBi0fLKfIQnAYyf6j"
 
 local function sendToDiscord(message)
     local data = { content = message }
